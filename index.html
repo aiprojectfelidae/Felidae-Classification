@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Felidae Classifier</title>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.9.0/dist/tf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@0.8/dist/teachablemachine-image.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600&display=swap" rel="stylesheet">
+  <style>
+    @font-face {
+      font-family: 'Nochen';
+      src: url('Nochen.ttf') format('truetype');
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      background-color: #111;
+      color: #ccc;
+      font-family: 'Nochen', 'Segoe UI', sans-serif;
+      padding: 3rem;
+      text-transform: uppercase;
+      margin: 0;
+    }
+
+    h1 {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 2.5em;
+      color: #f0f0f0;
+      margin-bottom: 1rem;
+      text-align: center;
+      text-transform: none;
+    }
+
+    p.description {
+      font-family: 'Nochen', sans-serif;
+      font-size: 1em;
+      color: #aaa;
+      max-width: 800px;
+      margin: 0 auto 2rem;
+      text-align: center;
+      text-transform: none;
+    }
+
+    .upload-btn {
+      background: transparent;
+      color: #ccc;
+      border: 2px solid #555;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 1em;
+      font-weight: bold;
+      letter-spacing: 1px;
+      cursor: pointer;
+      transition: 0.3s ease;
+      font-family: 'Orbitron', sans-serif;
+      text-transform: none;
+      display: inline-block;
+      margin: 0 auto 1rem;
+    }
+
+    .upload-container {
+      text-align: center;
+    }
+
+    .upload-btn:hover {
+      background-color: #222;
+      color: #fff;
+      border-color: #777;
+    }
+
+    input[type="file"] {
+      display: none;
+    }
+
+    #uploadedImage {
+      max-width: 350px;
+      margin-top: 2rem;
+      border: 2px dashed #444;
+      display: none;
+      border-radius: 10px;
+      display: block;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    #label, #confidence {
+      font-size: 1.2em;
+      margin-top: 1.2rem;
+      font-weight: bold;
+      color: #bbb;
+      font-family: 'Orbitron', sans-serif;
+      text-align: center;
+      text-transform: none;
+    }
+
+    .species-section {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: center;
+      max-width: 1000px;
+      margin: 4rem auto;
+      gap: 2rem;
+      opacity: 0;
+      transform: translateY(50px);
+      transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+    }
+
+    .species-section.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .species-section:nth-child(even) {
+      flex-direction: row-reverse;
+    }
+
+    .species-section img {
+      width: 100%;
+      max-width: 400px;
+      border-radius: 12px;
+      border: 1px solid #333;
+    }
+
+    .species-text {
+      max-width: 480px;
+    }
+
+    .species-text h2 {
+      font-family: 'Orbitron', sans-serif;
+      margin: 1rem 0 0.5rem;
+      text-align: left;
+    }
+
+    .species-text p {
+      color: #999;
+      text-transform: none;
+      font-size: 1rem;
+      font-family: 'Nochen', sans-serif;
+      text-align: left;
+    }
+
+    .final-description {
+      margin-top: 6rem;
+      font-size: 1rem;
+      max-width: 800px;
+      margin-left: auto;
+      margin-right: auto;
+      color: #aaa;
+      font-family: 'Nochen', sans-serif;
+      text-align: center;
+      text-transform: none;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Felidae Classifier</h1>
+  <p class="description">
+    This AI-powered web tool helps identify big cats from images using a Teachable Machine model. Just upload an image of a wild cat, and the classifier will instantly tell you whether it’s a cheetah, lion, puma, tiger, or leopard, along with an accuracy score.
+  </p>
+
+  <div class="upload-container">
+    <label for="imageUpload" class="upload-btn">Upload Image</label>
+    <input type="file" id="imageUpload" accept="image/*" />
+  </div>
+
+  <img id="uploadedImage" />
+  <h2 id="label">Species: --</h2>
+  <h3 id="confidence">Accuracy: --</h3>
+
+  <!-- Species content below -->
+  <div class="species-section">
+    <img src="images/cheetah.jpg" alt="Cheetah">
+    <div class="species-text">
+      <h2>Cheetah</h2>
+      <p>The fastest land animal, cheetahs are built for speed. They are found mostly in Africa and prefer open grasslands where they can sprint after prey. Cheetahs have black tear lines under their eyes, helping reduce sun glare and focus better on targets.</p>
+    </div>
+  </div>
+
+  <div class="species-section">
+    <img src="images/lion.jpg" alt="Lion">
+    <div class="species-text">
+      <h2>Lion</h2>
+      <p>Lions are social cats that live in groups called prides. Native to Africa, they are known as the kings of the jungle. Male lions sport manes while females do most of the hunting. They thrive in savannas and open woodlands.</p>
+    </div>
+  </div>
+
+  <div class="species-section">
+    <img src="images/puma.jpg" alt="Puma">
+    <div class="species-text">
+      <h2>Puma</h2>
+      <p>Also known as cougars or mountain lions, pumas are solitary and adaptable. They are found in the Americas and are excellent climbers. Pumas are known for their powerful build and long tails that help with balance.</p>
+    </div>
+  </div>
+
+  <div class="species-section">
+    <img src="images/tiger.jpg" alt="Tiger">
+    <div class="species-text">
+      <h2>Tiger</h2>
+      <p>Tigers are the largest of the big cats and are known for their distinctive stripes. Native to Asia, they prefer dense forests and are solitary hunters. Their stripes act as camouflage in jungle terrain.</p>
+    </div>
+  </div>
+
+  <div class="species-section">
+    <img src="images/leopard.jpg" alt="Leopard">
+    <div class="species-text">
+      <h2>Leopard</h2>
+      <p>Leopards are elusive and highly adaptable, found in Africa and Asia. They are known for their spotted coats and strength. Leopards often drag their prey into trees to avoid scavengers and are excellent climbers.</p>
+    </div>
+  </div>
+
+  <p class="final-description">
+    This project demonstrates how machine learning models like Teachable Machine can be used for wildlife identification. By providing visual data, users can explore species recognition technology and learn more about these majestic creatures.
+  </p>
+
+  <script>
+    window.onload = () => {
+      const URL = "./";
+      let model, maxPredictions;
+      let modelLoaded = false;
+
+      async function loadModel() {
+        try {
+          const modelURL = URL + "model.json";
+          const metadataURL = URL + "metadata.json";
+          model = await tmImage.load(modelURL, metadataURL);
+          maxPredictions = model.getTotalClasses();
+          modelLoaded = true;
+        } catch (error) {
+          console.error("Model failed to load:", error);
+          alert("Failed to load the model. Please check your files and try again.");
+        }
+      }
+
+      async function predictImage(image) {
+        if (!modelLoaded || !model) {
+          console.warn("Model not loaded yet.");
+          alert("Model is not loaded. Please wait and try again.");
+          return;
+        }
+        const prediction = await model.predict(image);
+        prediction.sort((a, b) => b.probability - a.probability);
+        document.getElementById("label").innerText = "Species: " + prediction[0].className;
+        document.getElementById("confidence").innerText = "Accuracy: " + (prediction[0].probability * 100).toFixed(2) + "%";
+      }
+
+      document.getElementById("imageUpload").addEventListener("change", async function (event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = async function (e) {
+          const img = document.getElementById("uploadedImage");
+          img.src = e.target.result;
+          img.style.display = "block";
+
+          img.onload = async () => {
+            await predictImage(img);
+          };
+        };
+        reader.readAsDataURL(file);
+      });
+
+      loadModel();
+
+      // Scroll effect for species-section
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('visible');
+          }
+        });
+      }, { threshold: 0.1 });
+
+      document.querySelectorAll('.species-section').forEach(section => {
+        observer.observe(section);
+      });
+    };
+  </script>
+
+</body>
+</html>
